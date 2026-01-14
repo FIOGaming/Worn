@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Créer un Design — WORN</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+</head>
+<body>
+    <!-- Removed "Design Custom" and "Admin" buttons from header navigation -->
+    <header class="header">
+        <div class="header-container">
+            <a href="index.html" class="logo">WORN</a>
+            <nav class="header-nav">
+                <a href="index.html" class="nav-link">Boutique</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main" style="padding-top: 6rem;">
+        <div class="container">
+            <section class="custom-design-hero">
+                <div class="custom-hero-content">
+                    <span class="section-label">Exprimez-vous</span>
+                    <h1 class="section-title" style="font-size: 3.5rem; margin-bottom: 1rem;">Créez Votre Design Unique</h1>
+                    <p style="font-size: 1.125rem; color: var(--gray-600); max-width: 600px; margin: 0 auto;">Choisissez un vêtement, envoyez votre design, et nous le créerons pour vous. Chaque pièce est unique et fabriquée sur mesure.</p>
+                </div>
+            </section>
+
+            <section class="custom-design-section">
+                <div class="custom-layout">
+                    <div class="custom-preview">
+                        <div class="preview-card">
+                            <div class="preview-header">
+                                <h3>Aperçu</h3>
+                            </div>
+                            <div id="previewArea" class="preview-area">
+                                <svg width="200" height="200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="0.5" opacity="0.1">
+                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                    <circle cx="12" cy="7" r="4"></circle>
+                                </svg>
+                                <p style="color: var(--gray-400); margin-top: 1rem;">Sélectionnez un vêtement et ajoutez votre design</p>
+                            </div>
+                            <div id="designPreview" class="design-preview"></div>
+                        </div>
+                    </div>
+
+                    <div class="custom-form-section">
+                        <form id="customDesignForm" class="custom-form">
+                            <div class="form-step active" data-step="1">
+                                <h2 class="form-step-title">Étape 1: Choisissez votre vêtement</h2>
+                                
+                                <!-- Updated garment types to T-shirt, Sweat, Pantalon -->
+                                <div class="form-group">
+                                    <label>Type de vêtement *</label>
+                                    <div class="garment-grid">
+                                        <div class="garment-option" data-garment="t-shirt" onclick="selectGarment('t-shirt', 'T-Shirt')">
+                                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                                <path d="M16 2L21 7v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7l5-5h8z"/>
+                                                <path d="M7 7h10"/>
+                                            </svg>
+                                            <span>T-Shirt</span>
+                                        </div>
+                                        <div class="garment-option" data-garment="sweat" onclick="selectGarment('sweat', 'Sweat')">
+                                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                                <rect x="3" y="7" width="18" height="15" rx="2"/>
+                                                <path d="M3 10h18"/>
+                                            </svg>
+                                            <span>Sweat</span>
+                                        </div>
+                                        <div class="garment-option" data-garment="pantalon" onclick="selectGarment('pantalon', 'Pantalon')">
+                                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                                <path d="M12 2v20M8 6h8M7 10h10M6 14h12M5 18h14"/>
+                                            </svg>
+                                            <span>Pantalon</span>
+                                        </div>
+                                    </div>
+                                    <input type="hidden" id="selectedGarment" required>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="garmentSize">Taille *</label>
+                                    <select id="garmentSize" class="form-input" required>
+                                        <option value="">Sélectionnez une taille</option>
+                                        <option value="XS">XS</option>
+                                        <option value="S">S</option>
+                                        <option value="M">M</option>
+                                        <option value="L">L</option>
+                                        <option value="XL">XL</option>
+                                        <option value="XXL">XXL</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>Couleur du vêtement *</label>
+                                    <div class="color-picker">
+                                        <div class="preset-colors">
+                                            <button type="button" class="color-btn" data-color="#000000" style="background: #000000" onclick="selectColor('#000000')"></button>
+                                            <button type="button" class="color-btn" data-color="#FFFFFF" style="background: #FFFFFF; border: 1px solid #ddd" onclick="selectColor('#FFFFFF')"></button>
+                                            <button type="button" class="color-btn" data-color="#808080" style="background: #808080" onclick="selectColor('#808080')"></button>
+                                            <button type="button" class="color-btn" data-color="#FF0000" style="background: #FF0000" onclick="selectColor('#FF0000')"></button>
+                                            <button type="button" class="color-btn" data-color="#0000FF" style="background: #0000FF" onclick="selectColor('#0000FF')"></button>
+                                            <button type="button" class="color-btn" data-color="#FFFF00" style="background: #FFFF00" onclick="selectColor('#FFFF00')"></button>
+                                        </div>
+                                    </div>
+                                    <input type="hidden" id="selectedColor" required>
+                                </div>
+
+                                <button type="button" class="btn-primary" style="width: 100%;" onclick="nextStep(2)">Continuer</button>
+                            </div>
+
+                            <div class="form-step" data-step="2">
+                                <h2 class="form-step-title">Étape 2: Votre Design</h2>
+
+                                <div class="form-group">
+                                    <label for="designImage">Téléchargez votre design *</label>
+                                    <div class="image-upload">
+                                        <input type="file" id="designImage" accept="image/*" class="file-input" required>
+                                        <label for="designImage" class="file-label">
+                                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                                                <circle cx="8.5" cy="8.5" r="1.5"/>
+                                                <polyline points="21 15 16 10 5 21"/>
+                                            </svg>
+                                            <span>Cliquez pour ajouter votre design</span>
+                                            <span style="font-size: 0.75rem; color: var(--gray-400); margin-top: 0.5rem;">PNG, JPG, SVG recommandés</span>
+                                        </label>
+                                    </div>
+                                    <div id="designImagePreview" class="image-preview"></div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="designDescription">Description de votre design *</label>
+                                    <textarea id="designDescription" class="form-textarea" rows="4" required placeholder="Décrivez votre idée, l'emplacement souhaité du design, les couleurs, etc..."></textarea>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="designPosition">Position du design *</label>
+                                    <select id="designPosition" class="form-input" required>
+                                        <option value="">Sélectionnez une position</option>
+                                        <option value="front-center">Devant - Centre</option>
+                                        <option value="front-left">Devant - Gauche (poche)</option>
+                                        <option value="back-center">Dos - Centre</option>
+                                        <option value="back-top">Dos - Haut (nuque)</option>
+                                        <option value="sleeve">Manche</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-actions">
+                                    <button type="button" class="btn-secondary" onclick="prevStep(1)">Retour</button>
+                                    <button type="button" class="btn-primary" onclick="nextStep(3)">Continuer</button>
+                                </div>
+                            </div>
+
+                            <div class="form-step" data-step="3">
+                                <h2 class="form-step-title">Étape 3: Vos Informations</h2>
+
+                                <div class="form-group">
+                                    <label for="customerName">Nom complet *</label>
+                                    <input type="text" id="customerName" class="form-input" required placeholder="Jean Dupont">
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="customerEmail">Email *</label>
+                                    <input type="email" id="customerEmail" class="form-input" required placeholder="votre@email.com">
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="customerPhone">Téléphone</label>
+                                    <input type="tel" id="customerPhone" class="form-input" placeholder="+33 6 12 34 56 78">
+                                </div>
+
+                                <div class="alert-info">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="12" r="10"/>
+                                        <line x1="12" y1="16" x2="12" y2="12"/>
+                                        <line x1="12" y1="8" x2="12.01" y2="8"/>
+                                    </svg>
+                                    <div>
+                                        <strong>Comment ça marche?</strong>
+                                        <p>Après soumission, notre équipe examinera votre demande et définira le prix en fonction de la complexité. Vous recevrez un devis par email sous 24-48h.</p>
+                                    </div>
+                                </div>
+
+                                <div class="form-actions">
+                                    <button type="button" class="btn-secondary" onclick="prevStep(2)">Retour</button>
+                                    <button type="submit" class="btn-primary" id="submitBtn">
+                                        <span class="btn-text">Envoyer ma demande</span>
+                                        <span class="btn-loading" style="display: none;">
+                                            <svg class="spinner" width="20" height="20" viewBox="0 0 24 24">
+                                                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" fill="none" stroke-dasharray="32" stroke-linecap="round"/>
+                                            </svg>
+                                            Envoi...
+                                        </span>
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Added WebCraft footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <span class="logo">WORN</span>
+                    <p>L'élégance redéfinie</p>
+                </div>
+                <div class="footer-links">
+                    <a href="contact.html">Contact</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© 2026 WORN. Tous droits réservés.</p>
+                <p style="margin-top: 0.5rem; font-size: 0.875rem;">
+                    Powered by <a href="https://webcraft-fr.vercel.app" target="_blank" rel="noopener noreferrer" style="color: #667eea; text-decoration: none; font-weight: 600;">WebCraft</a>
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <div id="successModal" class="success-modal">
+        <div class="success-content">
+            <div class="success-icon">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+            </div>
+            <h2>Demande envoyée!</h2>
+            <p>Votre demande de design personnalisé a été envoyée avec succès.</p>
+            <p><strong id="confirmEmail"></strong></p>
+            <p style="color: var(--gray-600); font-size: 0.875rem; margin-top: 1rem;">Vous recevrez un devis par email sous 24-48h.</p>
+            <a href="index.html" class="btn-primary">Retour à la boutique</a>
+        </div>
+    </div>
+
+    <script src="custom-design.js"></script>
+</body>
+</html>

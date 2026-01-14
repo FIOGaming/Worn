@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact — WORN</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+</head>
+<body>
+    <header class="header">
+        <div class="header-container">
+            <a href="index.html" class="logo">WORN</a>
+            <nav class="header-nav">
+                <a href="index.html" class="nav-link">Retour à la boutique</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main contact-main">
+        <div class="container contact-container">
+            <div class="contact-header">
+                <h1>Contact</h1>
+                <p>Une question ? N'hésitez pas à nous écrire.</p>
+            </div>
+
+            <form id="contactForm" class="contact-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="contactName">Nom *</label>
+                        <input type="text" id="contactName" required class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label for="contactEmail">Email *</label>
+                        <input type="email" id="contactEmail" required class="form-input">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="contactSubject">Sujet *</label>
+                    <input type="text" id="contactSubject" required class="form-input" placeholder="Ex: Question sur une commande">
+                </div>
+
+                <div class="form-group">
+                    <label for="contactMessage">Message *</label>
+                    <textarea id="contactMessage" required class="form-textarea" rows="6" placeholder="Votre message..."></textarea>
+                </div>
+
+                <button type="submit" class="btn-primary" id="contactBtn" style="width: 100%; padding: 1rem;">
+                    <span class="btn-text">Envoyer le message</span>
+                    <span class="btn-loading" style="display: none;">Envoi en cours...</span>
+                </button>
+            </form>
+
+            <div id="contactSuccess" style="display: none; text-align: center; padding: 3rem;">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin: 0 auto 1rem; color: #000;">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+                <h2 style="font-family: var(--font-display); margin-bottom: 0.5rem;">Message envoyé !</h2>
+                <p style="color: #71717a;">Nous vous répondrons dans les plus brefs délais.</p>
+                <a href="index.html" class="btn-primary" style="display: inline-block; margin-top: 1.5rem;">Retour à la boutique</a>
+            </div>
+        </div>
+    </main>
+
+    <!-- Added WebCraft footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <span class="logo">WORN</span>
+                    <p>L'élégance redéfinie</p>
+                </div>
+                <div class="footer-links">
+                    <a href="contact.html">Contact</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© 2026 WORN. Tous droits réservés.</p>
+                <p style="margin-top: 0.5rem; font-size: 0.875rem;">
+                    Powered by <a href="https://webcraft-fr.vercel.app" target="_blank" rel="noopener noreferrer" style="color: #667eea; text-decoration: none; font-weight: 600;">WebCraft</a>
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        emailjs.init("YOUR_PUBLIC_KEY");
+
+        document.getElementById('contactForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const btn = document.getElementById('contactBtn');
+            const btnText = btn.querySelector('.btn-text');
+            const btnLoading = btn.querySelector('.btn-loading');
+
+            btnText.style.display = 'none';
+            btnLoading.style.display = 'inline';
+            btn.disabled = true;
+
+            const templateParams = {
+                from_name: document.getElementById('contactName').value,
+                from_email: document.getElementById('contactEmail').value,
+                subject: document.getElementById('contactSubject').value,
+                message: document.getElementById('contactMessage').value
+            };
+
+            try {
+                await emailjs.send('YOUR_SERVICE_ID', 'YOUR_TEMPLATE_ID', templateParams);
+            } catch (error) {
+                console.log('Email non envoyé (config EmailJS requise)');
+            }
+
+            document.getElementById('contactForm').style.display = 'none';
+            document.getElementById('contactSuccess').style.display = 'block';
+        });
+    </script>
+</body>
+</html>

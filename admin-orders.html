@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion Commandes — WORN</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+</head>
+<body>
+    <header class="header">
+        <div class="header-container">
+            <a href="index.html" class="logo">WORN</a>
+            <nav class="header-nav">
+                <a href="admin-product.html" class="nav-link">Produits</a>
+                <a href="admin-custom.html" class="nav-link">Designs Custom</a>
+                <a href="index.html" class="nav-link">Boutique</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main">
+        <div class="container">
+            <section class="admin-orders-page">
+                <div class="orders-header">
+                    <div class="orders-header-content">
+                        <h1 class="orders-page-title">Gestion des Commandes</h1>
+                        <div class="orders-stats">
+                            <div class="stat-item">
+                                <span class="stat-label">Total</span>
+                                <span class="stat-value" id="totalOrders">0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">En attente</span>
+                                <span class="stat-value pending" id="pendingOrders">0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Envoyé</span>
+                                <span class="stat-value shipped" id="shippedOrders">0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Revenu Total</span>
+                                <span class="stat-value" id="totalRevenue">0€</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="orders-toolbar">
+                    <div class="search-filter-group">
+                        <div class="admin-search">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <path d="m21 21-4.35-4.35"></path>
+                            </svg>
+                            <input type="text" id="orderSearchInput" class="admin-search-input" placeholder="Rechercher par email, numéro de commande...">
+                        </div>
+                        
+                        <select id="statusFilter" class="filter-select">
+                            <option value="all">Tous les statuts</option>
+                            <option value="pending">En attente</option>
+                            <option value="processing">En cours</option>
+                            <option value="shipped">Envoyé</option>
+                            <option value="delivered">Livré</option>
+                            <option value="cancelled">Annulé</option>
+                        </select>
+
+                        <select id="sortOrders" class="filter-select">
+                            <option value="newest">Plus récent</option>
+                            <option value="oldest">Plus ancien</option>
+                            <option value="highest">Prix décroissant</option>
+                            <option value="lowest">Prix croissant</option>
+                        </select>
+                    </div>
+
+                    <button onclick="exportOrders()" class="btn-secondary">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                        Exporter CSV
+                    </button>
+                </div>
+
+                <div id="ordersList" class="orders-list"></div>
+            </section>
+        </div>
+    </main>
+
+    <script>
+        emailjs.init('3KBCuFH_xY7HjM3L9');
+        
+        const firebase = window.firebase;
+        const firebaseConfig = {
+            apiKey: "AIzaSyAvSh3XI-t78INDTuq5TTq07V1wOAeEEXI",
+            authDomain: "worn-4edd1.firebaseapp.com",
+            databaseURL: "https://worn-4edd1-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "worn-4edd1",
+            storageBucket: "worn-4edd1.firebasestorage.app",
+            messagingSenderId: "597648038146",
+            appId: "1:597648038146:web:29b0c3ef3d4aa133180a1b"
+        };
+
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const database = firebase.database();
+        
+        let allOrders = [];
+        let filteredOrders = [];
+
+        document.addEventListener("DOMContentLoaded", () => {
+            loadOrders();
+            document.getElementById("orderSearchInput")?.addEventListener("input", filterOrders);
+            document.getElementById("statusFilter")?.addEventListener("change", filterOrders);
+            document.getElementById("sortOrders")?.addEventListener("change", filterOrders);
+        });
+
+        function loadOrders() {
+            database.ref("orders").on("value", (snapshot) => {
+                const data = snapshot.val();
+                allOrders = data ? Object.entries(data).map(([key, val]) => ({ id: key, ...val })) : [];
+                filterOrders();
+            });
+        }
+
+        function filterOrders() {
+            const searchTerm = document.getElementById("orderSearchInput")?.value.toLowerCase() || "";
+            const statusFilter = document.getElementById("statusFilter")?.value || "all";
+            const sortBy = document.getElementById("sortOrders")?.value || "newest";
+
+            filteredOrders = allOrders.filter(order => {
+                const matchesSearch = order.email?.toLowerCase().includes(searchTerm) || 
+                                      order.orderNumber?.toString().includes(searchTerm) ||
+                                      order.customerName?.toLowerCase().includes(searchTerm);
+                const matchesStatus = statusFilter === "all" || order.status === statusFilter;
+                return matchesSearch && matchesStatus;
+            });
+
+            filteredOrders.sort((a, b) => {
+                switch(sortBy) {
+                    case "newest": return b.timestamp - a.timestamp;
+                    case "oldest": return a.timestamp - b.timestamp;
+                    case "highest": return parseFloat(b.total.replace(/[^0-9.]/g, '')) - parseFloat(a.total.replace(/[^0-9.]/g, ''));
+                    case "lowest": return parseFloat(a.total.replace(/[^0-9.]/g, '')) - parseFloat(b.total.replace(/[^0-9.]/g, ''));
+                    default: return 0;
+                }
+            });
+
+            displayOrders(filteredOrders);
+            updateStats(allOrders);
+        }
+
+        function updateStats(orders) {
+            const total = orders.length;
+            const pending = orders.filter(o => (o.status || 'pending') === 'pending').length;
+            const shipped = orders.filter(o => o.status === 'shipped').length;
+            const revenue = orders.reduce((sum, o) => sum + parseFloat(o.total.replace(/[^0-9.]/g, '')), 0);
+
+            document.getElementById("totalOrders").textContent = total;
+            document.getElementById("pendingOrders").textContent = pending;
+            document.getElementById("shippedOrders").textContent = shipped;
+            document.getElementById("totalRevenue").textContent = revenue.toFixed(2) + "€";
+        }
+
+        function displayOrders(orders) {
+            const list = document.getElementById("ordersList");
+
+            if (orders.length === 0) {
+                list.innerHTML = '<div class="empty-state" style="padding: 4rem 2rem; text-align: center; color: #71717a;"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin: 0 auto 1rem; opacity: 0.5;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg><h3>Aucune commande trouvée</h3></div>';
+                return;
+            }
+
+            list.innerHTML = orders.map((order) => {
+                const date = new Date(order.timestamp).toLocaleDateString("fr-FR", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit"
+                });
+
+                const statusOptions = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
+                const statusLabels = {
+                    'pending': 'En attente',
+                    'processing': 'En cours',
+                    'shipped': 'Envoyé',
+                    'delivered': 'Livré',
+                    'cancelled': 'Annulé'
+                };
+
+                const trackingUrl = `${window.location.origin}/order-tracking.html?id=${order.orderNumber}`;
+
+                return `
+                    <div class="order-card-enhanced">
+                        <div class="order-card-header">
+                            <div class="order-number-date">
+                                <span class="order-id">#${order.orderNumber}</span>
+                                <span class="order-date">${date}</span>
+                            </div>
+                            <span class="order-total-badge">${order.total}</span>
+                        </div>
+                        <div class="order-card-body">
+                            <div class="order-customer-section">
+                                <div class="customer-icon">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                        <circle cx="12" cy="7" r="4"></circle>
+                                    </svg>
+                                </div>
+                                <div class="customer-details">
+                                    <div class="order-customer-name">${order.customerName}</div>
+                                    <div class="order-customer-email">${order.email}</div>
+                                </div>
+                            </div>
+                            
+                            <div class="order-address-section">
+                                <div class="address-icon">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                                        <circle cx="12" cy="10" r="3"></circle>
+                                    </svg>
+                                </div>
+                                <div class="address-details">
+                                    ${order.address.street}, ${order.address.postalCode} ${order.address.city}
+                                </div>
+                            </div>
+
+                            <div class="order-items-section">
+                                <div class="items-icon">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                        <line x1="9" y1="9" x2="15" y2="9"></line>
+                                    </svg>
+                                </div>
+                                <div class="items-summary">${order.itemsSummary}</div>
+                            </div>
+
+                            <div class="order-tracking-section" style="display: flex; gap: 1rem; align-items: center; padding: 1rem; background: var(--gray-50); border-radius: 8px; margin-top: 0.5rem;">
+                                <div class="items-icon" style="background: var(--white);">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                                        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                                    </svg>
+                                </div>
+                                <div style="flex: 1;">
+                                    <div style="font-weight: 600; font-size: 0.875rem; margin-bottom: 0.25rem;">Lien de suivi</div>
+                                    <a href="${trackingUrl}" target="_blank" style="color: #3b82f6; font-size: 0.8125rem; text-decoration: none; word-break: break-all;">${trackingUrl}</a>
+                                </div>
+                                <button class="btn-action" onclick="copyTrackingLink('${trackingUrl}')" title="Copier le lien" style="background: var(--white);">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="order-card-footer">
+                            <select class="order-status-select ${order.status || 'pending'}" onchange="updateOrderStatus('${order.orderNumber}', this.value, '${order.email}', '${order.customerName}', '${trackingUrl}')">
+                                ${statusOptions.map(s => `<option value="${s}" ${(order.status || 'pending') === s ? 'selected' : ''}>${statusLabels[s]}</option>`).join('')}
+                            </select>
+                            <div class="order-actions">
+                                <button class="btn-action btn-duplicate" onclick="duplicateOrder('${order.orderNumber}')" title="Dupliquer">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                    </svg>
+                                </button>
+                                <button class="btn-action btn-delete-action" onclick="deleteOrder('${order.orderNumber}')" title="Supprimer">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="3 6 5 6 21 6"></polyline>
+                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join("");
+        }
+
+        function updateOrderStatus(orderId, newStatus, email, customerName, trackingUrl) {
+            database.ref("orders/" + orderId + "/status").set(newStatus);
+            
+            if (newStatus === 'shipped' || newStatus === 'delivered') {
+                emailjs.send('service_qfzd8k8', 'template_order_tracking', {
+                    to_email: email,
+                    to_name: customerName,
+                    order_number: orderId,
+                    tracking_url: trackingUrl,
+                    status: newStatus === 'shipped' ? 'expédiée' : 'livrée'
+                }).then(() => {
+                    console.log('Email de suivi envoyé avec succès');
+                }).catch((error) => {
+                    console.error('Erreur lors de l\'envoi de l\'email:', error);
+                });
+            }
+        }
+
+        function deleteOrder(orderId) {
+            if (!confirm("Êtes-vous sûr de vouloir supprimer cette commande ?")) return;
+            database.ref("orders/" + orderId).remove();
+        }
+
+        function duplicateOrder(orderId) {
+            const order = allOrders.find(o => o.orderNumber === orderId);
+            if (!order) return;
+            
+            const newOrderNumber = Date.now().toString(36).toUpperCase();
+            const newOrder = {
+                ...order,
+                orderNumber: newOrderNumber,
+                timestamp: Date.now(),
+                status: 'pending'
+            };
+            
+            database.ref("orders/" + newOrderNumber).set(newOrder);
+        }
+
+        function copyTrackingLink(url) {
+            navigator.clipboard.writeText(url).then(() => {
+                alert('Lien de suivi copié!');
+            }).catch(() => {
+                alert('Erreur lors de la copie du lien');
+            });
+        }
+
+        function exportOrders() {
+            if (filteredOrders.length === 0) {
+                alert("Aucune commande à exporter");
+                return;
+            }
+
+            const headers = ["Numéro", "Date", "Client", "Email", "Adresse", "Articles", "Total", "Statut", "Lien de suivi"];
+            const rows = filteredOrders.map(order => [
+                order.orderNumber,
+                new Date(order.timestamp).toLocaleString("fr-FR"),
+                order.customerName,
+                order.email,
+                `${order.address.street}, ${order.address.postalCode} ${order.address.city}`,
+                order.itemsSummary,
+                order.total,
+                order.status || 'pending',
+                `${window.location.origin}/order-tracking.html?id=${order.orderNumber}`
+            ]);
+
+            const csv = [headers, ...rows].map(row => row.map(cell => `"${cell}"`).join(",")).join("\n");
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = `commandes_${new Date().toISOString().split('T')[0]}.csv`;
+            link.click();
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paiement — WORN</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+</head>
+<body>
+    <header class="header">
+        <div class="header-container">
+            <a href="index.html" class="logo">WORN</a>
+            <nav class="header-nav">
+                <a href="index.html" class="nav-link">Retour à la boutique</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main checkout-main">
+        <div class="container">
+            <div class="checkout-layout">
+                <section class="checkout-form-section">
+                    <h2 class="checkout-title">Informations</h2>
+                    <form id="checkoutForm" class="checkout-form">
+                        <div class="form-group">
+                            <label for="customerName">Nom complet *</label>
+                            <input type="text" id="customerName" required class="form-input" placeholder="Jean Dupont" minlength="2">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="email">Email *</label>
+                            <input type="email" id="email" required class="form-input" placeholder="votre@email.com">
+                        </div>
+
+                        <h3 style="font-family: var(--font-display, 'Space Grotesk', sans-serif); font-size: 1.25rem; margin-bottom: 1rem; margin-top: 2rem;">Adresse de livraison</h3>
+
+                        <div class="form-group">
+                            <label for="address">Adresse complète *</label>
+                            <input type="text" id="address" required class="form-input" placeholder="123 Rue Example" minlength="5">
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="city">Ville *</label>
+                                <input type="text" id="city" required class="form-input" placeholder="Paris" minlength="2">
+                            </div>
+                            <div class="form-group">
+                                <label for="postalCode">Code postal *</label>
+                                <input type="text" id="postalCode" required class="form-input" placeholder="75001" pattern="[0-9]{5}" title="Entrez un code postal valide (5 chiffres)" maxlength="5">
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn-pay" id="payBtn">
+                            <span class="btn-text">Confirmer la commande</span>
+                            <span class="btn-loading" style="display: none;">
+                                <svg class="spinner" width="20" height="20" viewBox="0 0 24 24" style="animation: spin 1s linear infinite;">
+                                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" fill="none" stroke-dasharray="32" stroke-linecap="round"/>
+                                </svg>
+                                Envoi en cours...
+                            </span>
+                        </button>
+                    </form>
+                </section>
+
+                <section class="checkout-summary">
+                    <h2 class="checkout-title">Récapitulatif</h2>
+                    <div id="checkoutItems" class="checkout-items"></div>
+                    <div class="checkout-totals">
+                        <div class="checkout-line">
+                            <span>Sous-total</span>
+                            <span id="subtotal">0.00€</span>
+                        </div>
+                        <div class="checkout-line">
+                            <span>Livraison</span>
+                            <span id="shipping">Gratuite</span>
+                        </div>
+                        <div class="checkout-line total">
+                            <span>Total</span>
+                            <span id="checkoutTotal">0.00€</span>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <!-- Added WebCraft footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <span class="logo">WORN</span>
+                    <p>L'élégance redéfinie</p>
+                </div>
+                <div class="footer-links">
+                    <a href="contact.html">Contact</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© 2026 WORN. Tous droits réservés.</p>
+                <p style="margin-top: 0.5rem; font-size: 0.875rem;">
+                    Powered by <a href="https://webcraft-fr.vercel.app" target="_blank" rel="noopener noreferrer" style="color: #667eea; text-decoration: none; font-weight: 600;">WebCraft</a>
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <div id="successModal" class="success-modal">
+        <div class="success-content">
+            <div class="success-icon">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+            </div>
+            <h2>Commande confirmée !</h2>
+            <p>Un email de confirmation a été envoyé à <strong id="confirmEmail"></strong></p>
+            <p class="success-order">Commande #<span id="orderNumber"></span></p>
+            <a href="index.html" class="btn-primary">Retour à la boutique</a>
+        </div>
+    </div>
+
+    <script>
+        emailjs.init('3KBCuFH_xY7HjM3L9');
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyAvSh3XI-t78INDTuq5TTq07V1wOAeEEXI",
+            authDomain: "worn-4edd1.firebaseapp.com",
+            databaseURL: "https://worn-4edd1-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "worn-4edd1",
+            storageBucket: "worn-4edd1.firebasestorage.app",
+            messagingSenderId: "597648038146",
+            appId: "1:597648038146:web:29b0c3ef3d4aa133180a1b"
+        };
+        
+        if (!firebase.apps || !firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const database = firebase.database();
+
+        function loadCheckout() {
+            const sessionId = localStorage.getItem('sessionId') || 'user_' + Date.now();
+            localStorage.setItem('sessionId', sessionId);
+            const cart = JSON.parse(localStorage.getItem(`cart_${sessionId}`)) || [];
+            const checkoutItems = document.getElementById('checkoutItems');
+            const subtotal = document.getElementById('subtotal');
+            const checkoutTotal = document.getElementById('checkoutTotal');
+
+            if (cart.length === 0) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            checkoutItems.innerHTML = cart.map(item => `
+                <div class="checkout-item">
+                    <img src="${item.image}" alt="${item.name}" class="checkout-item-image">
+                    <div class="checkout-item-info">
+                        <div class="checkout-item-name">${item.name}</div>
+                        <div class="checkout-item-qty">Quantité: 1</div>
+                    </div>
+                    <div class="checkout-item-price">${parseFloat(item.price).toFixed(2)}€</div>
+                </div>
+            `).join('');
+
+            const total = cart.reduce((sum, item) => sum + parseFloat(item.price), 0);
+            subtotal.textContent = `${total.toFixed(2)}€`;
+            checkoutTotal.textContent = `${total.toFixed(2)}€`;
+        }
+
+        document.getElementById('checkoutForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const payBtn = document.getElementById('payBtn');
+            const btnText = payBtn.querySelector('.btn-text');
+            const btnLoading = payBtn.querySelector('.btn-loading');
+
+            btnText.style.display = 'none';
+            btnLoading.style.display = 'flex';
+            payBtn.disabled = true;
+
+            const sessionId = localStorage.getItem('sessionId');
+            const cart = JSON.parse(localStorage.getItem(`cart_${sessionId}`)) || [];
+            const total = cart.reduce((sum, item) => sum + parseFloat(item.price), 0);
+            const orderNumber = Date.now().toString(36).toUpperCase();
+            const customerName = document.getElementById('customerName').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const address = document.getElementById('address').value.trim();
+            const city = document.getElementById('city').value.trim();
+            const postalCode = document.getElementById('postalCode').value.trim();
+
+            const itemsSummary = cart.map(item => item.name).join(', ');
+            const trackingUrl = `${window.location.origin}/order-tracking.html?id=${orderNumber}`;
+
+            const orderData = {
+                orderNumber: orderNumber,
+                sessionId: sessionId,
+                customerName: customerName,
+                email: email,
+                address: {
+                    street: address,
+                    city: city,
+                    postalCode: postalCode,
+                    full: `${address}, ${postalCode} ${city}`
+                },
+                items: cart,
+                itemsSummary: itemsSummary,
+                total: `${total.toFixed(2)}€`,
+                totalAmount: total.toFixed(2),
+                status: 'pending',
+                timestamp: Date.now(),
+                date: new Date().toLocaleDateString('fr-FR')
+            };
+            
+            try {
+                await database.ref('orders/' + orderNumber).set(orderData);
+                
+                emailjs.send('service_qfzd8k8', 'template_order_confirmation', {
+                    to_email: email,
+                    to_name: customerName,
+                    order_number: orderNumber,
+                    tracking_url: trackingUrl,
+                    total: orderData.total,
+                    items: itemsSummary
+                }).then(() => {
+                    console.log('Email de confirmation envoyé avec lien de suivi');
+                }).catch((error) => {
+                    console.error('Erreur EmailJS:', error);
+                });
+                
+                document.getElementById('confirmEmail').textContent = email;
+                document.getElementById('orderNumber').textContent = orderNumber;
+                document.getElementById('successModal').classList.add('active');
+                
+                localStorage.removeItem(`cart_${sessionId}`);
+                
+                const cartCount = document.querySelector('.cart-count');
+                if (cartCount) cartCount.textContent = '0';
+                
+                setTimeout(() => {
+                    window.open(trackingUrl, '_blank');
+                }, 1500);
+                
+            } catch (error) {
+                console.error('Erreur lors de l\'enregistrement de la commande:', error);
+                
+                let errorMessage = 'Une erreur est survenue lors de la confirmation de votre commande.\n\n';
+                
+                if (error.code === 'PERMISSION_DENIED' || (error.message && error.message.includes('PERMISSION_DENIED'))) {
+                    errorMessage += 
+                        'ERREUR: Permissions Firebase non configurées.\n\n' +
+                        'Les règles Firebase Realtime Database bloquent l\'écriture.\n\n' +
+                        'SOLUTION:\n' +
+                        '1. Ouvrez le fichier FIREBASE_SETUP.txt\n' +
+                        '2. Suivez les instructions pour configurer les règles\n' +
+                        '3. Publiez les nouvelles règles\n' +
+                        '4. Réessayez de passer votre commande\n\n' +
+                        'Détails: ' + (error.message || error.code);
+                } else {
+                    errorMessage += 'Veuillez réessayer.\n\nDétails: ' + (error.message || 'Erreur inconnue');
+                }
+                
+                alert(errorMessage);
+                btnText.style.display = 'inline';
+                btnLoading.style.display = 'none';
+                payBtn.disabled = false;
+            }
+        });
+
+        document.getElementById('postalCode').addEventListener('input', (e) => {
+            e.target.value = e.target.value.replace(/\D/g, '').slice(0, 5);
+        });
+
+        document.addEventListener('DOMContentLoaded', loadCheckout);
+    </script>
+</body>
+</html>

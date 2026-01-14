@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Suivi de Commande — WORN</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+</head>
+<body>
+    <header class="header">
+        <div class="header-container">
+            <a href="index.html" class="logo">WORN</a>
+            <nav class="header-nav">
+                <a href="index.html" class="nav-link">Boutique</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main" style="padding-top: 8rem; padding-bottom: 4rem; min-height: 100vh;">
+        <div class="container" style="max-width: 900px;">
+            <div id="trackingContent"></div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <span class="logo">WORN</span>
+                    <p>L'élégance redéfinie</p>
+                </div>
+                <div class="footer-links">
+                    <a href="contact.html">Contact</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© 2026 WORN. Tous droits réservés.</p>
+                <p style="margin-top: 0.5rem; font-size: 0.875rem;">
+                    Powered by <a href="https://webcraft-fr.vercel.app" target="_blank" rel="noopener noreferrer" style="color: #667eea; text-decoration: none; font-weight: 600;">WebCraft</a>
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        const firebase = window.firebase;
+        const firebaseConfig = {
+            apiKey: "AIzaSyAvSh3XI-t78INDTuq5TTq07V1wOAeEEXI",
+            authDomain: "worn-4edd1.firebaseapp.com",
+            databaseURL: "https://worn-4edd1-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "worn-4edd1",
+            storageBucket: "worn-4edd1.firebasestorage.app",
+            messagingSenderId: "597648038146",
+            appId: "1:597648038146:web:29b0c3ef3d4aa133180a1b"
+        };
+
+        if (!firebase.apps || !firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const database = firebase.database();
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const trackingId = urlParams.get('id');
+
+        if (!trackingId) {
+            showError('Aucun identifiant de suivi fourni dans l\'URL');
+        } else {
+            loadOrderTracking(trackingId);
+        }
+
+        function loadOrderTracking(trackingId) {
+            database.ref('orders/' + trackingId).once('value', (snapshot) => {
+                const order = snapshot.val();
+                
+                if (!order) {
+                    showError('Commande introuvable');
+                } else {
+                    displayOrderTracking(order);
+                }
+            }, (error) => {
+                console.error('[v0] Firebase error:', error);
+                
+                if (error.code === 'PERMISSION_DENIED') {
+                    showError(
+                        'Erreur de permissions Firebase.\n\n' +
+                        'Les règles Firebase Realtime Database ne permettent pas la lecture.\n\n' +
+                        'Consultez le fichier FIREBASE_SETUP.txt pour configurer les règles correctement.'
+                    );
+                } else {
+                    showError('Erreur lors du chargement de la commande: ' + (error.message || 'Erreur inconnue'));
+                }
+            });
+        }
+
+        function displayOrderTracking(order) {
+            const statusLabels = {
+                'pending': 'En attente',
+                'processing': 'En cours de traitement',
+                'shipped': 'Expédiée',
+                'delivered': 'Livrée',
+                'cancelled': 'Annulée'
+            };
+
+            const statusIcons = {
+                'pending': '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+                'processing': '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>',
+                'shipped': '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>',
+                'delivered': '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
+                'cancelled': '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>'
+            };
+
+            const statusDescriptions = {
+                'pending': 'Votre commande a été reçue et est en attente de traitement.',
+                'processing': 'Votre commande est en cours de préparation.',
+                'shipped': 'Votre commande a été expédiée et est en route vers vous.',
+                'delivered': 'Votre commande a été livrée avec succès!',
+                'cancelled': 'Cette commande a été annulée.'
+            };
+
+            const status = order.status || 'pending';
+            const date = new Date(order.timestamp).toLocaleDateString('fr-FR', {
+                day: '2-digit',
+                month: 'long',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            document.getElementById('trackingContent').innerHTML = `
+                <div class="tracking-card">
+                    <div class="tracking-header">
+                        <div class="tracking-status-icon ${status}">
+                            ${statusIcons[status]}
+                        </div>
+                        <h1 class="tracking-title">${statusLabels[status]}</h1>
+                        <p class="tracking-description">${statusDescriptions[status]}</p>
+                    </div>
+
+                    <div class="tracking-timeline">
+                        <div class="timeline-item ${status === 'pending' || status === 'processing' || status === 'shipped' || status === 'delivered' ? 'completed' : ''}">
+                            <div class="timeline-dot"></div>
+                            <div class="timeline-content">
+                                <div class="timeline-title">Commande reçue</div>
+                                <div class="timeline-date">${date}</div>
+                            </div>
+                        </div>
+                        <div class="timeline-item ${status === 'processing' || status === 'shipped' || status === 'delivered' ? 'completed' : ''}">
+                            <div class="timeline-dot"></div>
+                            <div class="timeline-content">
+                                <div class="timeline-title">En préparation</div>
+                                <div class="timeline-date">${status === 'processing' || status === 'shipped' || status === 'delivered' ? 'En cours' : 'En attente'}</div>
+                            </div>
+                        </div>
+                        <div class="timeline-item ${status === 'shipped' || status === 'delivered' ? 'completed' : ''}">
+                            <div class="timeline-dot"></div>
+                            <div class="timeline-content">
+                                <div class="timeline-title">Expédiée</div>
+                                <div class="timeline-date">${status === 'shipped' || status === 'delivered' ? 'Expédiée' : 'En attente'}</div>
+                            </div>
+                        </div>
+                        <div class="timeline-item ${status === 'delivered' ? 'completed' : ''}">
+                            <div class="timeline-dot"></div>
+                            <div class="timeline-content">
+                                <div class="timeline-title">Livrée</div>
+                                <div class="timeline-date">${status === 'delivered' ? 'Livrée' : 'En attente'}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tracking-details">
+                        <h3>Détails de la commande</h3>
+                        <div class="detail-row">
+                            <span class="detail-label">Numéro de commande</span>
+                            <span class="detail-value">#${order.orderNumber}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Date</span>
+                            <span class="detail-value">${date}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Total</span>
+                            <span class="detail-value">${order.total}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Client</span>
+                            <span class="detail-value">${order.customerName}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Email</span>
+                            <span class="detail-value">${order.email}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Adresse de livraison</span>
+                            <span class="detail-value">${order.address.full}</span>
+                        </div>
+                    </div>
+
+                    <div class="tracking-items">
+                        <h3>Articles commandés</h3>
+                        <p>${order.itemsSummary}</p>
+                    </div>
+
+                    <div class="tracking-actions">
+                        <a href="index.html" class="btn-secondary">Retour à la boutique</a>
+                        <button onclick="window.print()" class="btn-primary">Imprimer</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function showError(message) {
+            document.getElementById('trackingContent').innerHTML = `
+                <div class="tracking-error">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="12" y1="8" x2="12" y2="12"/>
+                        <line x1="12" y1="16" x2="12.01" y2="16"/>
+                    </svg>
+                    <h2>${message}</h2>
+                    <p>Veuillez vérifier le lien de suivi que vous avez reçu par email.</p>
+                    <a href="index.html" class="btn-primary" style="margin-top: 2rem;">Retour à la boutique</a>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>
