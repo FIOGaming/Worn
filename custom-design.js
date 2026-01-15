@@ -1,4 +1,5 @@
 let database
+let emailjs
 
 function initFirebase() {
   try {
@@ -141,6 +142,14 @@ function prevStep(step) {
   window.scrollTo({ top: 0, behavior: "smooth" })
 }
 
+function generateCustomId() {
+  const timestamp = Date.now()
+  const random = Math.random().toString(36).substring(2, 6).toUpperCase()
+  const id = `CUSTOM-${timestamp.toString(36).toUpperCase()}${random}`
+  console.log("[v0] Generated custom ID:", id)
+  return id
+}
+
 document.getElementById("customDesignForm").addEventListener("submit", async (e) => {
   e.preventDefault()
 
@@ -148,7 +157,7 @@ document.getElementById("customDesignForm").addEventListener("submit", async (e)
     alert(
       "Erreur: La base de données n'est pas initialisée.\n\n" +
         "Veuillez rafraîchir la page et réessayer.\n\n" +
-        "Si le problème persiste, consultez le fichier FIREBASE_SETUP.txt",
+        "Si le problème persiste, vérifiez les règles Firebase.",
     )
     return
   }
@@ -161,7 +170,7 @@ document.getElementById("customDesignForm").addEventListener("submit", async (e)
   btnLoading.style.display = "flex"
   submitBtn.disabled = true
 
-  const requestId = "CUSTOM-" + Date.now().toString(36).toUpperCase()
+  const requestId = generateCustomId()
   const customerEmail = document.getElementById("customerEmail").value
 
   const customRequest = {
@@ -181,11 +190,77 @@ document.getElementById("customDesignForm").addEventListener("submit", async (e)
     date: new Date().toLocaleDateString("fr-FR"),
   }
 
+  console.log("[v0] =================================")
+  console.log("[v0] SAVING CUSTOM REQUEST")
+  console.log("[v0] Request ID:", requestId)
+  console.log("[v0] Firebase path: customRequests/" + requestId)
+  console.log("[v0] Request data keys:", Object.keys(customRequest))
+  console.log("[v0] =================================")
+
   try {
-    await database.ref("customDesigns/" + requestId).set(customRequest)
+    await database.ref("customRequests").child(requestId).set(customRequest)
+    console.log("[v0] ✅ Custom request saved successfully")
+
+    const verifySnapshot = await database.ref("customRequests").child(requestId).once("value")
+    console.log("[v0] =================================")
+    console.log("[v0] VERIFICATION")
+    console.log("[v0] Request exists in Firebase?:", verifySnapshot.exists())
+    if (verifySnapshot.exists()) {
+      console.log("[v0] ✅ Verified - Request found in database")
+    } else {
+      console.error("[v0] ❌ ERROR - Request NOT found after saving!")
+    }
+    console.log("[v0] =================================")
+
+    if (!verifySnapshot.exists()) {
+      throw new Error("Custom request was not saved properly in Firebase")
+    }
+
+    const trackingUrl = `${window.location.origin}/order-tracking.html?id=${requestId}`
+
+    try {
+      await emailjs.send("service_qfzd8k8", "template_order_confirmation", {
+        to_email: customerEmail,
+        to_name: customRequest.customerName,
+        order_number: requestId,
+        tracking_url: trackingUrl,
+        total: "En attente de devis",
+        items: `Design personnalisé: ${customRequest.garmentName}`,
+      })
+      console.log("[v0] ✅ Email confirmation sent successfully")
+    } catch (emailError) {
+      console.error("[v0] ⚠️  Email error (non-blocking):", emailError)
+    }
 
     document.getElementById("confirmEmail").textContent = customerEmail
-    document.getElementById("successModal").classList.add("active")
+    const successModal = document.getElementById("successModal")
+
+    const successContent = successModal.querySelector(".success-content")
+    const existingLink = successContent.querySelector(".tracking-link-info")
+    if (existingLink) {
+      existingLink.remove()
+    }
+
+    const trackingInfo = document.createElement("div")
+    trackingInfo.className = "tracking-link-info"
+    trackingInfo.style.cssText =
+      "margin-top: 1.5rem; padding: 1rem; background: var(--gray-50); border-radius: 8px; text-align: left;"
+    trackingInfo.innerHTML = `
+      <div style="font-weight: 600; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+        </svg>
+        Lien de suivi
+      </div>
+      <a href="${trackingUrl}" target="_blank" style="color: #3b82f6; font-size: 0.875rem; word-break: break-all;">${trackingUrl}</a>
+      <button onclick="navigator.clipboard.writeText('${trackingUrl}').then(() => alert('Lien copié!'))" style="margin-top: 0.5rem; padding: 0.5rem 1rem; background: var(--black); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.875rem; width: 100%;">
+        Copier le lien
+      </button>
+    `
+    successContent.insertBefore(trackingInfo, successContent.querySelector(".btn-primary"))
+
+    successModal.classList.add("active")
 
     document.getElementById("customDesignForm").reset()
     selectedGarment = null
@@ -211,21 +286,32 @@ document.getElementById("customDesignForm").addEventListener("submit", async (e)
     btnText.style.display = "inline"
     btnLoading.style.display = "none"
     submitBtn.disabled = false
+
+    console.log("[v0] ✅ Opening tracking page:", trackingUrl)
+    setTimeout(() => {
+      window.open(trackingUrl, "_blank")
+    }, 1500)
   } catch (error) {
-    console.error("[v0] Firebase error:", error)
+    console.error("[v0] =================================")
+    console.error("[v0] ❌ FIREBASE ERROR")
+    console.error("[v0] Error code:", error.code)
+    console.error("[v0] Error message:", error.message)
+    console.error("[v0] Full error:", error)
+    console.error("[v0] =================================")
 
     let errorMessage = "Une erreur est survenue lors de l'envoi de votre demande.\n\n"
 
     if (error.code === "PERMISSION_DENIED" || (error.message && error.message.includes("PERMISSION_DENIED"))) {
       errorMessage +=
-        "ERREUR: Permissions Firebase non configurées.\n\n" +
+        "🚫 ERREUR: Permissions Firebase non configurées.\n\n" +
         "Les règles Firebase Realtime Database bloquent l'écriture.\n\n" +
         "SOLUTION:\n" +
-        "1. Ouvrez le fichier FIREBASE_SETUP.txt\n" +
-        "2. Suivez les instructions pour configurer les règles\n" +
-        "3. Publiez les nouvelles règles\n" +
-        "4. Réessayez d'envoyer votre demande\n\n" +
-        "Détails techniques: " +
+        "1. Allez dans Firebase Console\n" +
+        "2. Realtime Database → Règles\n" +
+        '3. Copiez-collez: { "rules": { ".read": true, ".write": true } }\n' +
+        "4. Publiez les nouvelles règles\n" +
+        "5. Réessayez d'envoyer votre demande\n\n" +
+        "Détails: " +
         (error.message || error.code)
     } else if (error.message && error.message.includes("network")) {
       errorMessage += "Problème de connexion internet. Vérifiez votre connexion et réessayez."

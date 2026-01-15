@@ -102,8 +102,15 @@ function setupPriceSlider() {
     let min = Number.parseInt(minSlider.value)
     let max = Number.parseInt(maxSlider.value)
 
-    if (min > max) {
-      ;[min, max] = [max, min]
+    // Prevent sliders from crossing
+    if (min > max - 10) {
+      if (minSlider === document.activeElement) {
+        min = max - 10
+        minSlider.value = min
+      } else {
+        max = min + 10
+        maxSlider.value = max
+      }
     }
 
     document.getElementById("priceMinDisplay").textContent = min + "€"
@@ -118,6 +125,10 @@ function setupPriceSlider() {
 
   minSlider.addEventListener("input", updateSlider)
   maxSlider.addEventListener("input", updateSlider)
+
+  minSlider.addEventListener("touchstart", updateSlider)
+  maxSlider.addEventListener("touchstart", updateSlider)
+
   updateSlider()
 }
 

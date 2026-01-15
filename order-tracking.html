@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Suivi de Commande — WORN</title>
+    <title>Suivi de commande — WORN</title>
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -21,9 +21,288 @@
         </div>
     </header>
 
-    <main class="main" style="padding-top: 8rem; padding-bottom: 4rem; min-height: 100vh;">
+    <main class="main" style="padding-top: 6rem; min-height: 80vh;">
         <div class="container" style="max-width: 900px;">
-            <div id="trackingContent"></div>
+            <!-- Loading State -->
+            <div id="loadingState" class="tracking-state">
+                <div class="tracking-loader">
+                    <div class="modern-spinner">
+                        <div class="spinner-ring"></div>
+                        <div class="spinner-ring"></div>
+                        <div class="spinner-ring"></div>
+                    </div>
+                    <p style="margin-top: 2rem; color: var(--gray-600); font-size: 1rem; font-weight: 500;">Chargement de votre suivi...</p>
+                </div>
+            </div>
+
+            <!-- Error State -->
+            <div id="errorState" class="tracking-state" style="display: none;">
+                <div class="custom-error-card">
+                    <div class="error-icon-wrapper">
+                        <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <path d="M12 8v4"></path>
+                            <path d="M12 16h.01"></path>
+                        </svg>
+                    </div>
+                    <h2 style="font-family: var(--font-display); font-size: 1.75rem; margin-bottom: 0.75rem; color: var(--gray-900);">Commande introuvable</h2>
+                    <p style="color: var(--gray-600); margin-bottom: 0.5rem; line-height: 1.6; max-width: 400px; margin-left: auto; margin-right: auto;">Nous n'avons pas pu localiser de commande avec cet identifiant.</p>
+                    <p id="errorDetails" style="color: var(--gray-500); font-size: 0.9375rem; margin-bottom: 2rem; max-width: 400px; margin-left: auto; margin-right: auto; line-height: 1.5;"></p>
+                    <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                        <a href="index.html" class="btn-secondary">Retour à la boutique</a>
+                        <a href="index.html#contact" class="btn-primary">Nous contacter</a>
+                    </div>
+                    <div class="error-help-box">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                        </svg>
+                        <div>
+                            <strong>Besoin d'aide ?</strong>
+                            <p>Vérifiez que vous utilisez le bon lien de suivi reçu par email.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Normal Order Tracking -->
+            <div id="orderTracking" class="tracking-content" style="display: none;">
+                <div class="tracking-header">
+                    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="1" y="3" width="15" height="13"></rect>
+                            <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+                            <circle cx="5.5" cy="18.5" r="2.5"></circle>
+                            <circle cx="18.5" cy="18.5" r="2.5"></circle>
+                        </svg>
+                        <div>
+                            <h1 style="font-family: var(--font-display); font-size: 1.75rem; margin-bottom: 0.25rem;">Suivi de commande</h1>
+                            <p style="color: var(--gray-600);">Commande #<span id="orderNumber"></span></p>
+                        </div>
+                    </div>
+                    <div class="order-status-badge" id="orderStatusBadge"></div>
+                </div>
+
+                <div class="tracking-timeline">
+                    <div class="timeline-item" id="timeline-pending">
+                        <div class="timeline-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="12 6 12 12 16 14"></polyline>
+                            </svg>
+                        </div>
+                        <div class="timeline-content">
+                            <div class="timeline-title">Commande reçue</div>
+                            <div class="timeline-date" id="date-pending"></div>
+                        </div>
+                    </div>
+                    <div class="timeline-item" id="timeline-processing">
+                        <div class="timeline-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                <line x1="9" y1="9" x2="15" y2="9"></line>
+                            </svg>
+                        </div>
+                        <div class="timeline-content">
+                            <div class="timeline-title">En préparation</div>
+                            <div class="timeline-date" id="date-processing"></div>
+                        </div>
+                    </div>
+                    <div class="timeline-item" id="timeline-shipped">
+                        <div class="timeline-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="1" y="3" width="15" height="13"></rect>
+                                <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+                                <circle cx="5.5" cy="18.5" r="2.5"></circle>
+                                <circle cx="18.5" cy="18.5" r="2.5"></circle>
+                            </svg>
+                        </div>
+                        <div class="timeline-content">
+                            <div class="timeline-title">Expédiée</div>
+                            <div class="timeline-date" id="date-shipped"></div>
+                        </div>
+                    </div>
+                    <div class="timeline-item" id="timeline-delivered">
+                        <div class="timeline-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                        </div>
+                        <div class="timeline-content">
+                            <div class="timeline-title">Livrée</div>
+                            <div class="timeline-date" id="date-delivered"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tracking-details-grid">
+                    <div class="tracking-card">
+                        <h3 class="tracking-card-title">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                            Informations client
+                        </h3>
+                        <div class="tracking-info">
+                            <div class="info-label">Nom</div>
+                            <div class="info-value" id="customerName"></div>
+                        </div>
+                        <div class="tracking-info">
+                            <div class="info-label">Email</div>
+                            <div class="info-value" id="customerEmail"></div>
+                        </div>
+                    </div>
+
+                    <div class="tracking-card">
+                        <h3 class="tracking-card-title">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                                <circle cx="12" cy="10" r="3"></circle>
+                            </svg>
+                            Adresse de livraison
+                        </h3>
+                        <div class="tracking-info">
+                            <div class="info-value" id="deliveryAddress"></div>
+                        </div>
+                    </div>
+
+                    <div class="tracking-card" style="grid-column: 1 / -1;">
+                        <h3 class="tracking-card-title">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                <line x1="9" y1="9" x2="15" y2="9"></line>
+                            </svg>
+                            Articles commandés
+                        </h3>
+                        <div id="orderItems"></div>
+                        <div class="tracking-total">
+                            <span>Total</span>
+                            <span id="orderTotal"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Custom Design Tracking -->
+            <div id="customTracking" class="tracking-content" style="display: none;">
+                <div class="tracking-header">
+                    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
+                            <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
+                            <path d="M2 2l7.586 7.586"></path>
+                            <circle cx="11" cy="11" r="2"></circle>
+                        </svg>
+                        <div>
+                            <h1 style="font-family: var(--font-display); font-size: 1.75rem; margin-bottom: 0.25rem;">Suivi de design personnalisé</h1>
+                            <p style="color: var(--gray-600);">Demande #<span id="customNumber"></span></p>
+                        </div>
+                    </div>
+                    <div class="order-status-badge" id="customStatusBadge"></div>
+                </div>
+
+                <div class="tracking-details-grid">
+                    <div class="tracking-card">
+                        <h3 class="tracking-card-title">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                            Informations client
+                        </h3>
+                        <div class="tracking-info">
+                            <div class="info-label">Nom</div>
+                            <div class="info-value" id="customCustomerName"></div>
+                        </div>
+                        <div class="tracking-info">
+                            <div class="info-label">Email</div>
+                            <div class="info-value" id="customCustomerEmail"></div>
+                        </div>
+                        <div class="tracking-info" id="customPhoneSection" style="display: none;">
+                            <div class="info-label">Téléphone</div>
+                            <div class="info-value" id="customCustomerPhone"></div>
+                        </div>
+                    </div>
+
+                    <div class="tracking-card">
+                        <h3 class="tracking-card-title">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                            </svg>
+                            Détails du design
+                        </h3>
+                        <div class="tracking-info">
+                            <div class="info-label">Vêtement</div>
+                            <div class="info-value" id="customGarment"></div>
+                        </div>
+                        <div class="tracking-info">
+                            <div class="info-label">Taille</div>
+                            <div class="info-value" id="customSize"></div>
+                        </div>
+                        <div class="tracking-info">
+                            <div class="info-label">Couleur</div>
+                            <div class="info-value" id="customColor"></div>
+                        </div>
+                        <div class="tracking-info">
+                            <div class="info-label">Position</div>
+                            <div class="info-value" id="customPosition"></div>
+                        </div>
+                    </div>
+
+                    <div class="tracking-card" style="grid-column: 1 / -1;">
+                        <h3 class="tracking-card-title">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                                <line x1="12" y1="18" x2="12" y2="12"></line>
+                                <line x1="9" y1="15" x2="15" y2="15"></line>
+                            </svg>
+                            Description
+                        </h3>
+                        <p id="customDescription" style="color: var(--gray-700); line-height: 1.6;"></p>
+                    </div>
+
+                    <div class="tracking-card" style="grid-column: 1 / -1;">
+                        <h3 class="tracking-card-title">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                                <polyline points="21 15 16 10 5 21"></polyline>
+                            </svg>
+                            Votre design
+                        </h3>
+                        <div style="display: flex; justify-content: center; padding: 1rem;">
+                            <img id="customDesignImage" alt="Design personnalisé" style="max-width: 100%; max-height: 400px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                        </div>
+                    </div>
+
+                    <div class="tracking-card" id="quoteSection" style="grid-column: 1 / -1; display: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                        <h3 class="tracking-card-title" style="color: white;">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="12" y1="1" x2="12" y2="23"></line>
+                                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                            </svg>
+                            Devis proposé
+                        </h3>
+                        <div style="display: flex; gap: 2rem; flex-wrap: wrap;">
+                            <div>
+                                <div style="opacity: 0.9; font-size: 0.875rem; margin-bottom: 0.25rem;">Prix</div>
+                                <div style="font-size: 1.5rem; font-weight: 700;" id="customPrice"></div>
+                            </div>
+                            <div>
+                                <div style="opacity: 0.9; font-size: 0.875rem; margin-bottom: 0.25rem;">Délai</div>
+                                <div style="font-size: 1.125rem; font-weight: 600;" id="customDelay"></div>
+                            </div>
+                        </div>
+                        <div id="customNotesSection" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.2); display: none;">
+                            <div style="opacity: 0.9; font-size: 0.875rem; margin-bottom: 0.5rem;">Notes</div>
+                            <div id="customNotes" style="line-height: 1.6;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </main>
 
@@ -48,7 +327,6 @@
     </footer>
 
     <script>
-        const firebase = window.firebase;
         const firebaseConfig = {
             apiKey: "AIzaSyAvSh3XI-t78INDTuq5TTq07V1wOAeEEXI",
             authDomain: "worn-4edd1.firebaseapp.com",
@@ -67,166 +345,669 @@
         const urlParams = new URLSearchParams(window.location.search);
         const trackingId = urlParams.get('id');
 
+        console.log('[v0] ================================');
+        console.log('[v0] TRACKING PAGE LOADED');
+        console.log('[v0] Tracking ID from URL:', trackingId);
+        console.log('[v0] ================================');
+
         if (!trackingId) {
-            showError('Aucun identifiant de suivi fourni dans l\'URL');
+            showError('Aucun identifiant de suivi fourni dans l\'URL.', 'Veuillez vérifier le lien reçu par email.');
         } else {
-            loadOrderTracking(trackingId);
+            loadTrackingData(trackingId);
         }
 
-        function loadOrderTracking(trackingId) {
-            database.ref('orders/' + trackingId).once('value', (snapshot) => {
-                const order = snapshot.val();
+        async function loadTrackingData(id) {
+            const isCustom = id.startsWith('CUSTOM-');
+            
+            console.log('[v0] ================================');
+            console.log('[v0] LOADING TRACKING DATA');
+            console.log('[v0] ID:', id);
+            console.log('[v0] Type:', isCustom ? 'Custom Design' : 'Normal Order');
+            console.log('[v0] Firebase path:', isCustom ? 'customRequests/' + id : 'orders/' + id);
+            console.log('[v0] ================================');
+
+            try {
+                const path = isCustom ? 'customRequests/' + id : 'orders/' + id;
+                const snapshot = await database.ref(path).once('value');
                 
-                if (!order) {
-                    showError('Commande introuvable');
-                } else {
-                    displayOrderTracking(order);
-                }
-            }, (error) => {
-                console.error('[v0] Firebase error:', error);
+                console.log('[v0] ================================');
+                console.log('[v0] FIREBASE RESPONSE');
+                console.log('[v0] Exists:', snapshot.exists());
                 
-                if (error.code === 'PERMISSION_DENIED') {
+                if (!snapshot.exists()) {
+                    console.error('[v0] ❌ Data not found');
+                    console.log('[v0] ================================');
                     showError(
-                        'Erreur de permissions Firebase.\n\n' +
-                        'Les règles Firebase Realtime Database ne permettent pas la lecture.\n\n' +
-                        'Consultez le fichier FIREBASE_SETUP.txt pour configurer les règles correctement.'
+                        `La ${isCustom ? 'demande' : 'commande'} avec l'ID "${id}" n'a pas été trouvée.`,
+                        'Vérifiez que vous utilisez le bon lien de suivi.'
                     );
-                } else {
-                    showError('Erreur lors du chargement de la commande: ' + (error.message || 'Erreur inconnue'));
+                    return;
                 }
-            });
+
+                const data = snapshot.val();
+                console.log('[v0] ✅ Data found');
+                console.log('[v0] Data keys:', Object.keys(data));
+                console.log('[v0] Status:', data.status);
+                console.log('[v0] ================================');
+
+                document.getElementById('loadingState').style.display = 'none';
+                
+                if (isCustom) {
+                    displayCustomTracking(data);
+                } else {
+                    displayOrderTracking(data);
+                }
+
+            } catch (error) {
+                console.error('[v0] ================================');
+                console.error('[v0] ❌ FIREBASE ERROR');
+                console.error('[v0] Error:', error);
+                console.error('[v0] ================================');
+                showError(
+                    'Erreur lors du chargement des données.',
+                    error.message || 'Une erreur est survenue.'
+                );
+            }
         }
 
         function displayOrderTracking(order) {
+            document.getElementById('orderTracking').style.display = 'block';
+            
+            document.getElementById('orderNumber').textContent = order.orderNumber || order.id;
+            document.getElementById('customerName').textContent = order.customerName;
+            document.getElementById('customerEmail').textContent = order.email;
+            document.getElementById('deliveryAddress').textContent = order.address.full || 
+                `${order.address.street}, ${order.address.postalCode} ${order.address.city}`;
+            document.getElementById('orderTotal').textContent = order.total;
+
+            const itemsHtml = (order.items || []).map(item => `
+                <div style="display: flex; gap: 1rem; padding: 1rem; background: var(--gray-50); border-radius: 8px; margin-bottom: 0.5rem;">
+                    <img src="${item.image}" alt="${item.name}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 6px;">
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600;">${item.name}</div>
+                        <div style="color: var(--gray-600); font-size: 0.875rem;">Quantité: ${item.quantity || 1}</div>
+                    </div>
+                    <div style="font-weight: 600;">${parseFloat(item.price).toFixed(2)}€</div>
+                </div>
+            `).join('');
+            document.getElementById('orderItems').innerHTML = itemsHtml;
+
+            const status = order.status || 'pending';
             const statusLabels = {
                 'pending': 'En attente',
-                'processing': 'En cours de traitement',
+                'processing': 'En préparation',
                 'shipped': 'Expédiée',
                 'delivered': 'Livrée',
                 'cancelled': 'Annulée'
             };
 
-            const statusIcons = {
-                'pending': '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
-                'processing': '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>',
-                'shipped': '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>',
-                'delivered': '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
-                'cancelled': '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>'
-            };
+            const statusBadge = document.getElementById('orderStatusBadge');
+            statusBadge.textContent = statusLabels[status] || status;
+            statusBadge.className = 'order-status-badge ' + status;
 
-            const statusDescriptions = {
-                'pending': 'Votre commande a été reçue et est en attente de traitement.',
-                'processing': 'Votre commande est en cours de préparation.',
-                'shipped': 'Votre commande a été expédiée et est en route vers vous.',
-                'delivered': 'Votre commande a été livrée avec succès!',
-                'cancelled': 'Cette commande a été annulée.'
-            };
-
-            const status = order.status || 'pending';
-            const date = new Date(order.timestamp).toLocaleDateString('fr-FR', {
-                day: '2-digit',
-                month: 'long',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
+            const statusOrder = ['pending', 'processing', 'shipped', 'delivered'];
+            const currentIndex = statusOrder.indexOf(status);
+            
+            statusOrder.forEach((s, index) => {
+                const item = document.getElementById('timeline-' + s);
+                if (item) {
+                    if (index <= currentIndex) {
+                        item.classList.add('completed');
+                    }
+                    if (index === currentIndex) {
+                        item.classList.add('active');
+                        const dateEl = document.getElementById('date-' + s);
+                        if (dateEl && order.date) {
+                            dateEl.textContent = order.date;
+                        }
+                    }
+                }
             });
-
-            document.getElementById('trackingContent').innerHTML = `
-                <div class="tracking-card">
-                    <div class="tracking-header">
-                        <div class="tracking-status-icon ${status}">
-                            ${statusIcons[status]}
-                        </div>
-                        <h1 class="tracking-title">${statusLabels[status]}</h1>
-                        <p class="tracking-description">${statusDescriptions[status]}</p>
-                    </div>
-
-                    <div class="tracking-timeline">
-                        <div class="timeline-item ${status === 'pending' || status === 'processing' || status === 'shipped' || status === 'delivered' ? 'completed' : ''}">
-                            <div class="timeline-dot"></div>
-                            <div class="timeline-content">
-                                <div class="timeline-title">Commande reçue</div>
-                                <div class="timeline-date">${date}</div>
-                            </div>
-                        </div>
-                        <div class="timeline-item ${status === 'processing' || status === 'shipped' || status === 'delivered' ? 'completed' : ''}">
-                            <div class="timeline-dot"></div>
-                            <div class="timeline-content">
-                                <div class="timeline-title">En préparation</div>
-                                <div class="timeline-date">${status === 'processing' || status === 'shipped' || status === 'delivered' ? 'En cours' : 'En attente'}</div>
-                            </div>
-                        </div>
-                        <div class="timeline-item ${status === 'shipped' || status === 'delivered' ? 'completed' : ''}">
-                            <div class="timeline-dot"></div>
-                            <div class="timeline-content">
-                                <div class="timeline-title">Expédiée</div>
-                                <div class="timeline-date">${status === 'shipped' || status === 'delivered' ? 'Expédiée' : 'En attente'}</div>
-                            </div>
-                        </div>
-                        <div class="timeline-item ${status === 'delivered' ? 'completed' : ''}">
-                            <div class="timeline-dot"></div>
-                            <div class="timeline-content">
-                                <div class="timeline-title">Livrée</div>
-                                <div class="timeline-date">${status === 'delivered' ? 'Livrée' : 'En attente'}</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="tracking-details">
-                        <h3>Détails de la commande</h3>
-                        <div class="detail-row">
-                            <span class="detail-label">Numéro de commande</span>
-                            <span class="detail-value">#${order.orderNumber}</span>
-                        </div>
-                        <div class="detail-row">
-                            <span class="detail-label">Date</span>
-                            <span class="detail-value">${date}</span>
-                        </div>
-                        <div class="detail-row">
-                            <span class="detail-label">Total</span>
-                            <span class="detail-value">${order.total}</span>
-                        </div>
-                        <div class="detail-row">
-                            <span class="detail-label">Client</span>
-                            <span class="detail-value">${order.customerName}</span>
-                        </div>
-                        <div class="detail-row">
-                            <span class="detail-label">Email</span>
-                            <span class="detail-value">${order.email}</span>
-                        </div>
-                        <div class="detail-row">
-                            <span class="detail-label">Adresse de livraison</span>
-                            <span class="detail-value">${order.address.full}</span>
-                        </div>
-                    </div>
-
-                    <div class="tracking-items">
-                        <h3>Articles commandés</h3>
-                        <p>${order.itemsSummary}</p>
-                    </div>
-
-                    <div class="tracking-actions">
-                        <a href="index.html" class="btn-secondary">Retour à la boutique</a>
-                        <button onclick="window.print()" class="btn-primary">Imprimer</button>
-                    </div>
-                </div>
-            `;
         }
 
-        function showError(message) {
-            document.getElementById('trackingContent').innerHTML = `
-                <div class="tracking-error">
-                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                        <circle cx="12" cy="12" r="10"/>
-                        <line x1="12" y1="8" x2="12" y2="12"/>
-                        <line x1="12" y1="16" x2="12.01" y2="16"/>
-                    </svg>
-                    <h2>${message}</h2>
-                    <p>Veuillez vérifier le lien de suivi que vous avez reçu par email.</p>
-                    <a href="index.html" class="btn-primary" style="margin-top: 2rem;">Retour à la boutique</a>
-                </div>
+        function displayCustomTracking(custom) {
+            document.getElementById('customTracking').style.display = 'block';
+            
+            document.getElementById('customNumber').textContent = custom.id;
+            document.getElementById('customCustomerName').textContent = custom.customerName;
+            document.getElementById('customCustomerEmail').textContent = custom.email;
+            
+            if (custom.phone) {
+                document.getElementById('customPhoneSection').style.display = 'block';
+                document.getElementById('customCustomerPhone').textContent = custom.phone;
+            }
+
+            document.getElementById('customGarment').textContent = custom.garmentName;
+            document.getElementById('customSize').textContent = custom.size;
+            
+            const colorEl = document.getElementById('customColor');
+            colorEl.innerHTML = `
+                <span style="display: inline-flex; align-items: center; gap: 0.5rem;">
+                    <span style="display: inline-block; width: 20px; height: 20px; background: ${custom.color}; border: 2px solid var(--gray-300); border-radius: 4px;"></span>
+                    ${custom.color}
+                </span>
             `;
+
+            const positionLabels = {
+                'front-center': 'Devant - Centre',
+                'front-left': 'Devant - Gauche',
+                'back-center': 'Dos - Centre',
+                'back-top': 'Dos - Haut',
+                'sleeve': 'Manche'
+            };
+            document.getElementById('customPosition').textContent = positionLabels[custom.position] || custom.position;
+            document.getElementById('customDescription').textContent = custom.description;
+            document.getElementById('customDesignImage').src = custom.designImage;
+
+            if (custom.price) {
+                document.getElementById('quoteSection').style.display = 'block';
+                document.getElementById('customPrice').textContent = custom.price + '€';
+                document.getElementById('customDelay').textContent = custom.delay || 'Non spécifié';
+                
+                if (custom.quoteNotes) {
+                    document.getElementById('customNotesSection').style.display = 'block';
+                    document.getElementById('customNotes').textContent = custom.quoteNotes;
+                }
+            }
+
+            const status = custom.status || 'pending';
+            const statusLabels = {
+                'pending': 'En attente',
+                'quoted': 'Devis envoyé',
+                'approved': 'Approuvé',
+                'in-production': 'En production',
+                'completed': 'Terminé',
+                'rejected': 'Refusé'
+            };
+
+            const statusBadge = document.getElementById('customStatusBadge');
+            statusBadge.textContent = statusLabels[status] || status;
+            statusBadge.className = 'order-status-badge ' + status;
+        }
+
+        function showError(message, details) {
+            document.getElementById('loadingState').style.display = 'none';
+            const errorState = document.getElementById('errorState');
+            errorState.style.display = 'block';
+            
+            const errorDetails = document.getElementById('errorDetails');
+            if (details) {
+                errorDetails.textContent = details;
+            }
+            
+            errorState.querySelector('p').textContent = message;
         }
     </script>
+
+    <style>
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Modern spinner animation with 3 rings */
+        .modern-spinner {
+            position: relative;
+            width: 80px;
+            height: 80px;
+        }
+
+        .spinner-ring {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border: 3px solid transparent;
+            border-top-color: var(--black);
+            border-radius: 50%;
+            animation: spinRing 1.5s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+        }
+
+        .spinner-ring:nth-child(1) {
+            animation-delay: -0.45s;
+            border-top-color: var(--gray-900);
+        }
+
+        .spinner-ring:nth-child(2) {
+            animation-delay: -0.3s;
+            border-top-color: var(--gray-700);
+        }
+
+        .spinner-ring:nth-child(3) {
+            animation-delay: -0.15s;
+            border-top-color: var(--gray-400);
+        }
+
+        @keyframes spinRing {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .tracking-state {
+            text-align: center;
+            padding: 4rem 2rem;
+        }
+
+        .tracking-loader {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Beautiful custom error card design */
+        .custom-error-card {
+            max-width: 600px;
+            margin: 0 auto;
+            background: var(--white);
+            padding: 3rem 2rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+            animation: slideUp 0.5s ease;
+        }
+
+        .error-icon-wrapper {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 1.5rem;
+            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #dc2626;
+            animation: scaleIn 0.5s ease 0.2s both;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes scaleIn {
+            from {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .error-help-box {
+            margin-top: 2rem;
+            padding: 1.25rem;
+            background: var(--gray-50);
+            border: 1px solid var(--gray-200);
+            border-radius: 12px;
+            display: flex;
+            gap: 1rem;
+            text-align: left;
+            max-width: 450px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .error-help-box svg {
+            flex-shrink: 0;
+            color: var(--gray-600);
+            margin-top: 0.125rem;
+        }
+
+        .error-help-box strong {
+            display: block;
+            margin-bottom: 0.25rem;
+            color: var(--gray-900);
+            font-weight: 600;
+        }
+
+        .error-help-box p {
+            color: var(--gray-600);
+            font-size: 0.875rem;
+            line-height: 1.5;
+            margin: 0;
+        }
+
+        .btn-secondary {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.875rem 1.75rem;
+            background: var(--white);
+            color: var(--gray-900);
+            border: 2px solid var(--gray-300);
+            border-radius: 8px;
+            font-size: 0.9375rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            background: var(--gray-50);
+            border-color: var(--gray-400);
+            transform: translateY(-2px);
+        }
+
+        .btn-primary {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.875rem 1.75rem;
+            background: var(--black);
+            color: var(--white);
+            border: 2px solid var(--black);
+            border-radius: 8px;
+            font-size: 0.9375rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            background: var(--gray-800);
+            border-color: var(--gray-800);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Enhanced tracking content with smooth entrance animation */
+        .tracking-content {
+            animation: fadeInUp 0.6s ease;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Improved tracking header with better shadows and spacing */
+        .tracking-header {
+            background: var(--white);
+            padding: 2.5rem;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            border: 1px solid var(--gray-100);
+        }
+
+        /* Enhanced status badges with gradients and better colors */
+        .order-status-badge {
+            padding: 0.625rem 1.25rem;
+            border-radius: 100px;
+            font-weight: 700;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .order-status-badge.pending {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            color: #92400e;
+        }
+
+        .order-status-badge.processing {
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            color: #1e40af;
+        }
+
+        .order-status-badge.shipped {
+            background: linear-gradient(135deg, #ddd6fe 0%, #c4b5fd 100%);
+            color: #5b21b6;
+        }
+
+        .order-status-badge.delivered {
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            color: #065f46;
+        }
+
+        .order-status-badge.cancelled {
+            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+            color: #991b1b;
+        }
+
+        .order-status-badge.quoted {
+            background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+            color: #3730a3;
+        }
+
+        .order-status-badge.approved {
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            color: #065f46;
+        }
+
+        .order-status-badge.in-production {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            color: #92400e;
+        }
+
+        .order-status-badge.rejected {
+            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+            color: #991b1b;
+        }
+
+        /* Modern timeline with better visual hierarchy */
+        .tracking-timeline {
+            background: var(--white);
+            padding: 2.5rem;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+            margin-bottom: 2rem;
+            border: 1px solid var(--gray-100);
+        }
+
+        .timeline-item {
+            display: flex;
+            gap: 1.25rem;
+            position: relative;
+            padding-bottom: 2.5rem;
+            opacity: 0.35;
+            transition: opacity 0.3s ease;
+        }
+
+        .timeline-item:last-child {
+            padding-bottom: 0;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: 20px;
+            top: 48px;
+            bottom: 0;
+            width: 3px;
+            background: linear-gradient(180deg, var(--gray-200) 0%, var(--gray-100) 100%);
+            border-radius: 2px;
+        }
+
+        .timeline-item:last-child::before {
+            display: none;
+        }
+
+        .timeline-item.completed {
+            opacity: 1;
+        }
+
+        .timeline-item.completed::before {
+            background: linear-gradient(180deg, var(--black) 0%, var(--gray-700) 100%);
+        }
+
+        .timeline-item.active {
+            opacity: 1;
+        }
+
+        /* Beautiful timeline icons with better visual feedback */
+        .timeline-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: var(--gray-100);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            border: 3px solid var(--gray-200);
+            transition: all 0.3s ease;
+            position: relative;
+            z-index: 1;
+        }
+
+        .timeline-item.completed .timeline-icon {
+            background: linear-gradient(135deg, var(--black) 0%, var(--gray-800) 100%);
+            border-color: var(--black);
+            color: var(--white);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .timeline-item.active .timeline-icon {
+            background: var(--white);
+            border-color: var(--black);
+            border-width: 4px;
+            animation: pulseIcon 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes pulseIcon {
+            0%, 100% {
+                box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.4);
+            }
+            50% {
+                box-shadow: 0 0 0 10px rgba(0, 0, 0, 0);
+            }
+        }
+
+        .timeline-content {
+            flex: 1;
+            padding-top: 0.25rem;
+        }
+
+        .timeline-title {
+            font-weight: 700;
+            margin-bottom: 0.375rem;
+            font-size: 1.0625rem;
+            color: var(--gray-900);
+        }
+
+        .timeline-date {
+            color: var(--gray-600);
+            font-size: 0.9375rem;
+            font-weight: 500;
+        }
+
+        /* Improved details grid with better cards */
+        .tracking-details-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .tracking-card {
+            background: var(--white);
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+            border: 1px solid var(--gray-100);
+            transition: all 0.3s ease;
+        }
+
+        .tracking-card:hover {
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .tracking-card-title {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-family: var(--font-display);
+            font-size: 1.125rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1.25rem;
+            border-bottom: 2px solid var(--gray-100);
+            color: var(--gray-900);
+        }
+
+        .tracking-info {
+            margin-bottom: 1.25rem;
+        }
+
+        .tracking-info:last-child {
+            margin-bottom: 0;
+        }
+
+        .info-label {
+            font-size: 0.875rem;
+            color: var(--gray-600);
+            margin-bottom: 0.375rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .info-value {
+            font-weight: 600;
+            color: var(--gray-900);
+            font-size: 1rem;
+        }
+
+        .tracking-total {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 1.25rem;
+            margin-top: 1.25rem;
+            border-top: 2px solid var(--gray-100);
+            font-size: 1.375rem;
+            font-weight: 700;
+            font-family: var(--font-display);
+        }
+
+        @media (max-width: 768px) {
+            .tracking-details-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .tracking-card {
+                grid-column: 1 / -1 !important;
+            }
+
+            .tracking-header {
+                padding: 1.5rem;
+            }
+
+            .tracking-timeline {
+                padding: 1.5rem;
+            }
+
+            .custom-error-card {
+                padding: 2rem 1.5rem;
+            }
+
+            .error-help-box {
+                flex-direction: column;
+                text-align: center;
+            }
+        }
+    </style>
 </body>
 </html>

@@ -306,13 +306,14 @@ body {
   border: 1px solid var(--gray-200);
   border-radius: 12px;
   padding: 1.5rem;
-  min-width: 280px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  min-width: 300px;
+  /* Improved shadow and z-index */
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08);
   opacity: 0;
   visibility: hidden;
   transform: translateY(-10px);
-  transition: all 0.3s ease;
-  z-index: 50;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 100;
 }
 
 .price-filter-dropdown.active {
@@ -325,15 +326,18 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
-  font-weight: 600;
-  font-size: 0.875rem;
+  margin-bottom: 1.5rem;
+  /* Improved typography */
+  font-weight: 700;
+  font-size: 1rem;
+  font-family: var(--font-display);
+  color: var(--black);
 }
 
 .range-slider {
   position: relative;
   height: 6px;
-  margin: 1.5rem 0;
+  margin: 2rem 0;
 }
 
 .range-track {
@@ -347,8 +351,10 @@ body {
 .range-progress {
   position: absolute;
   height: 6px;
-  background: var(--black);
+  /* Added gradient for better visual */
+  background: linear-gradient(90deg, var(--gray-700) 0%, var(--black) 100%);
   border-radius: 3px;
+  transition: all 0.2s ease;
 }
 
 .range-input {
@@ -363,47 +369,69 @@ body {
 
 .range-input::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   background: var(--white);
-  border: 2px solid var(--black);
+  border: 3px solid var(--black);
   border-radius: 50%;
   cursor: pointer;
   pointer-events: auto;
-  transition: transform 0.2s ease;
+  /* Better shadow and hover effect */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: all 0.2s ease;
 }
 
 .range-input::-webkit-slider-thumb:hover {
-  transform: scale(1.2);
+  transform: scale(1.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.range-input::-webkit-slider-thumb:active {
+  transform: scale(1.05);
 }
 
 .range-input::-moz-range-thumb {
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   background: var(--white);
-  border: 2px solid var(--black);
+  border: 3px solid var(--black);
   border-radius: 50%;
   cursor: pointer;
   pointer-events: auto;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: all 0.2s ease;
+}
+
+.range-input::-moz-range-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 .btn-apply-price {
   width: 100%;
-  padding: 0.75rem;
+  padding: 0.875rem;
   background: var(--black);
   color: var(--white);
   border: none;
   border-radius: 8px;
-  font-size: 0.75rem;
-  font-weight: 600;
+  font-size: 0.8125rem;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.1em;
   cursor: pointer;
-  transition: all 0.3s ease;
+  /* Better hover effect */
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-family: var(--font-body);
 }
 
 .btn-apply-price:hover {
   background: var(--gray-800);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.btn-apply-price:active {
+  transform: translateY(0);
 }
 
 /* ============================================

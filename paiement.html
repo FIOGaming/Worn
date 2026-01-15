@@ -143,6 +143,14 @@
         }
         const database = firebase.database();
 
+        function generateOrderId() {
+            const timestamp = Date.now();
+            const random = Math.random().toString(36).substring(2, 6).toUpperCase();
+            const id = `${timestamp.toString(36).toUpperCase()}${random}`;
+            console.log('[v0] Generated order ID:', id);
+            return id;
+        }
+
         function loadCheckout() {
             const sessionId = localStorage.getItem('sessionId') || 'user_' + Date.now();
             localStorage.setItem('sessionId', sessionId);
@@ -186,7 +194,9 @@
             const sessionId = localStorage.getItem('sessionId');
             const cart = JSON.parse(localStorage.getItem(`cart_${sessionId}`)) || [];
             const total = cart.reduce((sum, item) => sum + parseFloat(item.price), 0);
-            const orderNumber = Date.now().toString(36).toUpperCase();
+            
+            const orderNumber = generateOrderId();
+            
             const customerName = document.getElementById('customerName').value.trim();
             const email = document.getElementById('email').value.trim();
             const address = document.getElementById('address').value.trim();
@@ -197,6 +207,7 @@
             const trackingUrl = `${window.location.origin}/order-tracking.html?id=${orderNumber}`;
 
             const orderData = {
+                id: orderNumber,
                 orderNumber: orderNumber,
                 sessionId: sessionId,
                 customerName: customerName,
@@ -216,8 +227,31 @@
                 date: new Date().toLocaleDateString('fr-FR')
             };
             
+            console.log('[v0] =================================');
+            console.log('[v0] SAVING ORDER');
+            console.log('[v0] Order ID:', orderNumber);
+            console.log('[v0] Firebase path: orders/' + orderNumber);
+            console.log('[v0] Order data keys:', Object.keys(orderData));
+            console.log('[v0] =================================');
+            
             try {
-                await database.ref('orders/' + orderNumber).set(orderData);
+                await database.ref('orders').child(orderNumber).set(orderData);
+                console.log('[v0] ✅ Order saved successfully');
+                
+                const verifySnapshot = await database.ref('orders').child(orderNumber).once('value');
+                console.log('[v0] =================================');
+                console.log('[v0] VERIFICATION');
+                console.log('[v0] Order exists in Firebase?:', verifySnapshot.exists());
+                if (verifySnapshot.exists()) {
+                    console.log('[v0] ✅ Verified - Order found in database');
+                } else {
+                    console.error('[v0] ❌ ERROR - Order NOT found after saving!');
+                }
+                console.log('[v0] =================================');
+                
+                if (!verifySnapshot.exists()) {
+                    throw new Error('Order was not saved properly in Firebase');
+                }
                 
                 emailjs.send('service_qfzd8k8', 'template_order_confirmation', {
                     to_email: email,
@@ -227,9 +261,9 @@
                     total: orderData.total,
                     items: itemsSummary
                 }).then(() => {
-                    console.log('Email de confirmation envoyé avec lien de suivi');
+                    console.log('[v0] ✅ Confirmation email sent successfully');
                 }).catch((error) => {
-                    console.error('Erreur EmailJS:', error);
+                    console.error('[v0] ⚠️  EmailJS error (non-blocking):', error);
                 });
                 
                 document.getElementById('confirmEmail').textContent = email;
@@ -241,24 +275,31 @@
                 const cartCount = document.querySelector('.cart-count');
                 if (cartCount) cartCount.textContent = '0';
                 
+                console.log('[v0] ✅ Opening tracking page:', trackingUrl);
                 setTimeout(() => {
                     window.open(trackingUrl, '_blank');
                 }, 1500);
                 
             } catch (error) {
-                console.error('Erreur lors de l\'enregistrement de la commande:', error);
+                console.error('[v0] =================================');
+                console.error('[v0] ❌ ORDER SAVE ERROR');
+                console.error('[v0] Error code:', error.code);
+                console.error('[v0] Error message:', error.message);
+                console.error('[v0] Full error:', error);
+                console.error('[v0] =================================');
                 
                 let errorMessage = 'Une erreur est survenue lors de la confirmation de votre commande.\n\n';
                 
                 if (error.code === 'PERMISSION_DENIED' || (error.message && error.message.includes('PERMISSION_DENIED'))) {
                     errorMessage += 
-                        'ERREUR: Permissions Firebase non configurées.\n\n' +
+                        '🚫 ERREUR: Permissions Firebase non configurées.\n\n' +
                         'Les règles Firebase Realtime Database bloquent l\'écriture.\n\n' +
                         'SOLUTION:\n' +
-                        '1. Ouvrez le fichier FIREBASE_SETUP.txt\n' +
-                        '2. Suivez les instructions pour configurer les règles\n' +
-                        '3. Publiez les nouvelles règles\n' +
-                        '4. Réessayez de passer votre commande\n\n' +
+                        '1. Allez dans Firebase Console\n' +
+                        '2. Realtime Database → Règles\n' +
+                        '3. Copiez-collez: { "rules": { ".read": true, ".write": true } }\n' +
+                        '4. Publiez les nouvelles règles\n' +
+                        '5. Réessayez de passer votre commande\n\n' +
                         'Détails: ' + (error.message || error.code);
                 } else {
                     errorMessage += 'Veuillez réessayer.\n\nDétails: ' + (error.message || 'Erreur inconnue');
