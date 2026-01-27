@@ -67,6 +67,7 @@ const priceRange = { min: 0, max: 500 }
 
 document.addEventListener("DOMContentLoaded", () => {
   loadProductsFromFirebase()
+  loadApprovedReviews()
   setupFilters()
   setupSearch()
   setupPriceSlider()
@@ -74,6 +75,40 @@ document.addEventListener("DOMContentLoaded", () => {
   setupScrollEffects()
   setupKeyboardShortcuts()
 })
+
+function loadApprovedReviews() {
+  const container = document.getElementById('reviewsContainer')
+  if (!container) return
+
+  database.ref('reviews').orderByChild('status').equalTo('approved').on('value', (snapshot) => {
+    const data = snapshot.val()
+    const reviews = data ? Object.values(data) : []
+    
+    if (reviews.length === 0) {
+      const section = document.getElementById('reviews')
+      if (section) section.style.display = 'none'
+      return
+    }
+
+    const section = document.getElementById('reviews')
+    if (section) section.style.display = 'block'
+
+    container.innerHTML = reviews.slice(0, 6).map(review => {
+      const stars = Array(5).fill(0).map((_, i) => 
+        i < review.rating ? '<span style="color: #fbbf24;">&#9733;</span>' : '<span style="color: #d1d5db;">&#9733;</span>'
+      ).join('')
+
+      return `
+        <div class="review-card-home">
+          <div class="review-card-stars">${stars}</div>
+          <h4 class="review-card-title">${review.title}</h4>
+          <p class="review-card-text">${review.text.length > 150 ? review.text.substring(0, 150) + '...' : review.text}</p>
+          <div class="review-card-author">— ${review.name}</div>
+        </div>
+      `
+    }).join('')
+  })
+}
 
 function loadProductsFromFirebase() {
   database.ref("products").on(

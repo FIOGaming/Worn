@@ -34,19 +34,60 @@
 
             <section class="custom-design-section">
                 <div class="custom-layout">
-                    <div class="custom-preview">
-                        <div class="preview-card">
+<div class="custom-preview">
+                        <div class="preview-card preview-card-premium">
                             <div class="preview-header">
-                                <h3>Aperçu</h3>
+                                <div class="preview-header-left">
+                                    <span class="preview-badge">Apercu en direct</span>
+                                    <h3>Votre Creation</h3>
+                                </div>
+                                <div class="preview-controls">
+                                    <button type="button" class="preview-view-btn active" data-view="front" onclick="setPreviewView('front')">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                        </svg>
+                                        Face
+                                    </button>
+                                    <button type="button" class="preview-view-btn" data-view="back" onclick="setPreviewView('back')">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                            <line x1="9" y1="3" x2="9" y2="21"/>
+                                        </svg>
+                                        Dos
+                                    </button>
+                                </div>
                             </div>
-                            <div id="previewArea" class="preview-area">
-                                <svg width="200" height="200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="0.5" opacity="0.1">
-                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                    <circle cx="12" cy="7" r="4"></circle>
-                                </svg>
-                                <p style="color: var(--gray-400); margin-top: 1rem;">Sélectionnez un vêtement et ajoutez votre design</p>
+                            <div class="preview-stage">
+                                <div class="preview-background">
+                                    <div class="preview-grid"></div>
+                                </div>
+                                <div id="previewArea" class="preview-area-3d">
+                                    <div class="preview-placeholder">
+                                        <div class="preview-placeholder-icon">
+                                            <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                                                <path d="M20.38 3.46L16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z"/>
+                                            </svg>
+                                        </div>
+                                        <p class="preview-placeholder-title">Visualisez votre creation</p>
+                                        <p class="preview-placeholder-text">Selectionnez un vetement et une couleur pour voir l'apercu</p>
+                                    </div>
+                                </div>
+                                <div id="designOverlay" class="design-overlay"></div>
                             </div>
-                            <div id="designPreview" class="design-preview"></div>
+                            <div class="preview-info-bar">
+                                <div class="preview-info-item" id="previewGarmentInfo">
+                                    <span class="info-label">Vetement</span>
+                                    <span class="info-value">-</span>
+                                </div>
+                                <div class="preview-info-item" id="previewColorInfo">
+                                    <span class="info-label">Couleur</span>
+                                    <span class="info-value">-</span>
+                                </div>
+                                <div class="preview-info-item" id="previewDesignInfo">
+                                    <span class="info-label">Design</span>
+                                    <span class="info-value">Non ajoute</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -55,29 +96,89 @@
                             <div class="form-step active" data-step="1">
                                 <h2 class="form-step-title">Étape 1: Choisissez votre vêtement</h2>
                                 
-                                <!-- Updated garment types to T-shirt, Sweat, Pantalon -->
+<!-- Updated garment types to T-shirt, Sweat, Pantalon -->
                                 <div class="form-group">
-                                    <label>Type de vêtement *</label>
+                                    <label>Type de vetement *</label>
                                     <div class="garment-grid">
                                         <div class="garment-option" data-garment="t-shirt" onclick="selectGarment('t-shirt', 'T-Shirt')">
-                                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                                                <path d="M16 2L21 7v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7l5-5h8z"/>
-                                                <path d="M7 7h10"/>
-                                            </svg>
-                                            <span>T-Shirt</span>
+                                            <div class="garment-icon">
+                                                <svg viewBox="0 0 100 100" width="64" height="64">
+                                                    <defs>
+                                                        <linearGradient id="tshirtGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                            <stop offset="0%" style="stop-color:#f8fafc"/>
+                                                            <stop offset="100%" style="stop-color:#e2e8f0"/>
+                                                        </linearGradient>
+                                                    </defs>
+                                                    <!-- T-shirt shape -->
+                                                    <path d="M20 25 L5 35 L5 48 L20 42 L20 90 L80 90 L80 42 L95 48 L95 35 L80 25 L65 25 C62 18 50 15 50 15 C50 15 38 18 35 25 Z" 
+                                                          fill="url(#tshirtGrad)" stroke="#94a3b8" stroke-width="2" stroke-linejoin="round"/>
+                                                    <!-- Collar -->
+                                                    <ellipse cx="50" cy="24" rx="15" ry="6" fill="none" stroke="#94a3b8" stroke-width="2"/>
+                                                    <!-- Sleeve lines -->
+                                                    <path d="M20 42 L5 48" stroke="#cbd5e1" stroke-width="1.5"/>
+                                                    <path d="M80 42 L95 48" stroke="#cbd5e1" stroke-width="1.5"/>
+                                                    <!-- Bottom hem -->
+                                                    <path d="M20 90 L80 90" stroke="#94a3b8" stroke-width="2"/>
+                                                </svg>
+                                            </div>
+                                            <span class="garment-name">T-Shirt</span>
                                         </div>
                                         <div class="garment-option" data-garment="sweat" onclick="selectGarment('sweat', 'Sweat')">
-                                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                                                <rect x="3" y="7" width="18" height="15" rx="2"/>
-                                                <path d="M3 10h18"/>
-                                            </svg>
-                                            <span>Sweat</span>
+                                            <div class="garment-icon">
+                                                <svg viewBox="0 0 100 100" width="64" height="64">
+                                                    <defs>
+                                                        <linearGradient id="sweatGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                            <stop offset="0%" style="stop-color:#f8fafc"/>
+                                                            <stop offset="100%" style="stop-color:#e2e8f0"/>
+                                                        </linearGradient>
+                                                    </defs>
+                                                    <!-- Sweat body with hood -->
+                                                    <path d="M18 28 L2 38 L2 58 L18 52 L18 92 L82 92 L82 52 L98 58 L98 38 L82 28 L65 28 C62 20 50 16 50 16 C50 16 38 20 35 28 Z" 
+                                                          fill="url(#sweatGrad)" stroke="#94a3b8" stroke-width="2" stroke-linejoin="round"/>
+                                                    <!-- Hood detail -->
+                                                    <path d="M35 28 C38 20 50 16 50 16 C50 16 62 20 65 28" fill="none" stroke="#94a3b8" stroke-width="2"/>
+                                                    <!-- Hood strings -->
+                                                    <line x1="42" y1="32" x2="42" y2="48" stroke="#94a3b8" stroke-width="1.5"/>
+                                                    <line x1="58" y1="32" x2="58" y2="48" stroke="#94a3b8" stroke-width="1.5"/>
+                                                    <!-- Kangaroo pocket -->
+                                                    <path d="M30 65 Q50 70 70 65 L70 80 Q50 85 30 80 Z" fill="none" stroke="#94a3b8" stroke-width="1.5"/>
+                                                    <!-- Cuffs -->
+                                                    <rect x="2" y="52" width="16" height="6" fill="#e2e8f0" stroke="#94a3b8" stroke-width="1"/>
+                                                    <rect x="82" y="52" width="16" height="6" fill="#e2e8f0" stroke="#94a3b8" stroke-width="1"/>
+                                                    <!-- Bottom ribbing -->
+                                                    <rect x="18" y="86" width="64" height="6" fill="#e2e8f0" stroke="#94a3b8" stroke-width="1"/>
+                                                </svg>
+                                            </div>
+                                            <span class="garment-name">Sweat</span>
                                         </div>
                                         <div class="garment-option" data-garment="pantalon" onclick="selectGarment('pantalon', 'Pantalon')">
-                                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                                                <path d="M12 2v20M8 6h8M7 10h10M6 14h12M5 18h14"/>
-                                            </svg>
-                                            <span>Pantalon</span>
+                                            <div class="garment-icon">
+                                                <svg viewBox="0 0 80 100" width="56" height="70">
+                                                    <defs>
+                                                        <linearGradient id="pantsGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                            <stop offset="0%" style="stop-color:#f8fafc"/>
+                                                            <stop offset="100%" style="stop-color:#e2e8f0"/>
+                                                        </linearGradient>
+                                                    </defs>
+                                                    <!-- Waistband -->
+                                                    <rect x="8" y="5" width="64" height="10" rx="2" fill="url(#pantsGrad)" stroke="#94a3b8" stroke-width="2"/>
+                                                    <!-- Belt loops -->
+                                                    <rect x="18" y="3" width="4" height="14" fill="#e2e8f0" stroke="#94a3b8" stroke-width="1"/>
+                                                    <rect x="38" y="3" width="4" height="14" fill="#e2e8f0" stroke="#94a3b8" stroke-width="1"/>
+                                                    <rect x="58" y="3" width="4" height="14" fill="#e2e8f0" stroke="#94a3b8" stroke-width="1"/>
+                                                    <!-- Left leg -->
+                                                    <path d="M8 15 L12 95 L35 95 L40 55 L40 15 Z" fill="url(#pantsGrad)" stroke="#94a3b8" stroke-width="2" stroke-linejoin="round"/>
+                                                    <!-- Right leg -->
+                                                    <path d="M40 15 L40 55 L45 95 L68 95 L72 15 Z" fill="url(#pantsGrad)" stroke="#94a3b8" stroke-width="2" stroke-linejoin="round"/>
+                                                    <!-- Fly -->
+                                                    <line x1="40" y1="15" x2="40" y2="45" stroke="#94a3b8" stroke-width="1.5"/>
+                                                    <!-- Left pocket -->
+                                                    <path d="M12 18 L12 35 L28 38 L30 18" fill="none" stroke="#94a3b8" stroke-width="1.5"/>
+                                                    <!-- Right pocket -->
+                                                    <path d="M68 18 L68 35 L52 38 L50 18" fill="none" stroke="#94a3b8" stroke-width="1.5"/>
+                                                </svg>
+                                            </div>
+                                            <span class="garment-name">Pantalon</span>
                                         </div>
                                     </div>
                                     <input type="hidden" id="selectedGarment" required>
@@ -96,7 +197,7 @@
                                     </select>
                                 </div>
 
-                                <div class="form-group">
+                                <br><div class="form-group">
                                     <label>Couleur du vêtement *</label>
                                     <div class="color-picker">
                                         <div class="preset-colors">
@@ -111,7 +212,7 @@
                                     <input type="hidden" id="selectedColor" required>
                                 </div>
 
-                                <button type="button" class="btn-primary" style="width: 100%;" onclick="nextStep(2)">Continuer</button>
+                                <br><button type="button" class="btn-primary" style="width: 100%;" onclick="nextStep(2)">Continuer</button>
                             </div>
 
                             <div class="form-step" data-step="2">
